@@ -1,0 +1,54 @@
+cmd_sys_err_t cmd_impl_HELLO_THERE(const cmd_sys_cmd_t *cmd, cmd_HELLO_THERE_args_t *args, uint32_t args_len, cmd_HELLO_THERE_resp_t *resp, const data_fmt_desc_t *resp_desc, uint32_t resp_len, uint8_t *buf) {
+    static uint8_t message[32] = {0};
+
+    // Read the message from the input stream
+    uint32_t message_len = MIN((sizeof(message) - 1), (cmd->header.data_len - args_len));
+    uint32_t bytes_read = io_stream_read(cmd->input, message, message_len, pdMS_TO_TICKS(CMD_SYS_INPUT_READ_TIMEOUT_MS), NULL);
+    if (bytes_read != message_len) {
+        //log_str(ERROR, LOG_PRINT_GENERAL, "Error reading args");
+        return CMD_SYS_ERR_RESP_TOO_LARGE;
+    }
+
+    // output the name that was read to log
+    //log_str(INFO, LOG_PRINT_GENERAL, "%s", message);
+
+    // Data for response
+    const char *output_message = (const char *)message;
+    const uint32_t message_len_output = strlen(output_message);
+
+    resp->number = 12345;
+
+    cmd_sys_err_t err = CMD_SYS_SUCCESS;
+
+    // Begin response
+    err = cmd_sys_begin_response(cmd, CMD_SYS_RESP_CODE_SUCCESS, (resp_len + message_len));
+    if (err != CMD_SYS_SUCCESS) return err;
+
+    // Send fixed size fields
+    err = cmd_sys_handle_resp_fields(cmd, resp, resp_desc, resp_len, buf);
+    if (err != CMD_SYS_SUCCESS) return err;
+
+    // Send variable size field
+    uint32_t bytes_written = io_stream_write(cmd->output, message, message_len_output, pdMS_TO_TICKS(CMD_SYS_OUTPUT_WRITE_TIMEOUT_MS), NULL);
+    if (bytes_written != message_len_output) return CMD_SYS_ERR_WRITE_TIMEOUT;
+
+    // Finish response
+    err = cmd_sys_finish_response(cmd);
+    if (err != CMD_SYS_SUCCESS) return err;
+
+
+    return err;
+}
+
+    },
+    "HELLO_THERE": {
+        "id": 30,
+        "args": [
+            {"number": "u32"},
+            {"message": "string"}
+        ],
+        "resp": [
+            {"number": "u32"},
+            {"message": "string"}
+        ]
+    }
