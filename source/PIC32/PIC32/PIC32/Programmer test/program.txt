@@ -1,0 +1,4 @@
+device pic18f4520
+hwtool pickit3 -p
+program "Blinky.hex"
+quit
